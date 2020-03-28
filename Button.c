@@ -16,15 +16,15 @@
 //Check if mouseOver button is click buttonRec or not return btnState
 int Button(bool mouseOn, Rectangle buttonRec, Texture2D btn, Vector2 pos){
     int btnState = 0;
+    DrawTextureRec(btn, buttonRec, pos, WHITE);
     if(mouseOn){
-        if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)) btnState = 1;
-        else btnState = 2;
-        if(btnState==1) DrawTextureRec(btn, buttonRec, pos, BLACK);
-        else if(btnState==2) DrawTextureRec(btn, buttonRec, pos, WHITE);
-        }else{
-            DrawTextureRec(btn, buttonRec, pos, WHITE);
-            btnState = 0;
-         }
+        if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+            DrawTextureRec(btn, buttonRec, pos, BLACK);
+        }
+        if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) btnState = 1;
+    }else{
+        btnState = 0;
+    }
          return btnState;
 }
 
@@ -50,30 +50,28 @@ int main(void)
     
     ImageResize(&bg, 800, 600);
     Texture2D backGround = LoadTextureFromImage(bg);
-    Texture2D btn = LoadTextureFromImage(btnImg);
+    Texture2D startBtn = LoadTextureFromImage(btnImg);
     
+   
+    Rectangle startBtnRec = {0, 0, startBtn.width, startBtn.height};
+    Rectangle randBtnRec = {0, 0, startBtn.width, startBtn.height};
     
-    Rectangle buttonRec1 = {0, 0, btn.width, btn.height};
-    Rectangle buttonRec2 = {0, 0, btn.width, btn.height};
-    Rectangle buttonRec3 = {0, 0, btn.width, btn.height};
-    Rectangle buttonRec4 = {0, 0, btn.width, btn.height};
+    Rectangle startBtnBound = {screenWidth / 2 - startBtn.width / 2, screenHeight / 4, startBtn.width, startBtn.height};
+    Rectangle randBtnBound = {850, 50, startBtn.width, startBtn.height};
     
-    Rectangle buttonBound1 = {850, 50, btn.width, btn.height};
-    Rectangle buttonBound2 = {850, 200, btn.width, btn.height};
-    Rectangle buttonBound3 = {850, 350, btn.width, btn.height};
-    Rectangle buttonBound4 = {850, 500, btn.width, btn.height};
-    
+    bool gameStart = false;
     bool mouseOn1, mouseOn2, mouseOn3, mouseOn4;
     int btnState = 0;
-
+    int randNum;
+    char randStr[3] = "";
+    
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         Vector2 mousePos = GetMousePosition();
-        mouseOn1 = IsMouseOver(mousePos, buttonBound1);
-        mouseOn2 = IsMouseOver(mousePos, buttonBound2);
-        mouseOn3 = IsMouseOver(mousePos, buttonBound3);
-        mouseOn4 = IsMouseOver(mousePos, buttonBound4);
+        mouseOn1 = IsMouseOver(mousePos, startBtnBound);
+        mouseOn2 = IsMouseOver(mousePos, randBtnBound);
+        
         if(IsKeyPressed(KEY_F11)){
             ToggleFullscreen();
             SetWindowPosition(50, 50);
@@ -82,11 +80,16 @@ int main(void)
         BeginDrawing();
             
             ClearBackground(RAYWHITE);
-            DrawTexture(backGround, 0, 0, WHITE);
-            Button(mouseOn1, buttonRec1, btn, (Vector2){buttonBound1.x, buttonBound1.y});
-            Button(mouseOn2, buttonRec2, btn, (Vector2){buttonBound2.x, buttonBound2.y});
-            Button(mouseOn3, buttonRec3, btn, (Vector2){buttonBound3.x, buttonBound3.y});
-            Button(mouseOn4, buttonRec4, btn, (Vector2){buttonBound4.x, buttonBound4.y});
+            if(gameStart == true){
+                DrawTexture(backGround, 0, 0, WHITE);
+                if(Button(mouseOn2, randBtnRec, startBtn, (Vector2){randBtnBound.x, randBtnBound.y})){
+                   randNum = GetRandomValue(1, 6);
+                   sprintf(randStr, "%d", randNum);
+                }
+                DrawText(randStr, 850, 200, 20, BLACK);
+            }else{
+                gameStart = Button(mouseOn1, startBtnRec, startBtn, (Vector2){startBtnBound.x, startBtnBound.y});
+            }
 
             
         EndDrawing();
@@ -95,7 +98,7 @@ int main(void)
     
     UnloadImage(bg);
     UnloadImage(btnImg);
-    UnloadTexture(btn);
+    UnloadTexture(startBtn);
     UnloadTexture(backGround);
 
     CloseWindow();
