@@ -11,7 +11,9 @@
 *
 ********************************************************************************************/
 
+#include <stdio.h>
 #include "raylib.h"
+#include <time.h>
 
 //Check if mouseOver button is click buttonRec or not return btnState
 int Button(bool mouseOn, Rectangle buttonRec, Texture2D btn, Vector2 pos){
@@ -52,9 +54,12 @@ int main(void)
     Texture2D backGround = LoadTextureFromImage(bg);
     Texture2D startBtn = LoadTextureFromImage(btnImg);
     
+    int boardPosX[6] = {-560, -490, -420, -350, -280, -210};
+    int boardPosY[6] = {-530, -530, -530, -530, -530, -530};
    
     Rectangle startBtnRec = {0, 0, startBtn.width, startBtn.height};
     Rectangle randBtnRec = {0, 0, startBtn.width, startBtn.height};
+    Rectangle Char1 = {0, 0, 50, 50};
     
     Rectangle startBtnBound = {screenWidth / 2 - startBtn.width / 2, screenHeight / 4, startBtn.width, startBtn.height};
     Rectangle randBtnBound = {850, 50, startBtn.width, startBtn.height};
@@ -64,10 +69,16 @@ int main(void)
     int btnState = 0;
     int randNum;
     char randStr[3] = "";
+    int framesCounter = 0;
+    int currentFrames = 0;
+    
+    SetTargetFPS(60);
     
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
+        framesCounter++;
+        
         Vector2 mousePos = GetMousePosition();
         mouseOn1 = IsMouseOver(mousePos, startBtnBound);
         mouseOn2 = IsMouseOver(mousePos, randBtnBound);
@@ -76,22 +87,27 @@ int main(void)
             ToggleFullscreen();
             SetWindowPosition(50, 50);
         }
+        
+        if( framesCounter >= (60/8) && gameStart == true){
+            framesCounter = 0;
+            currentFrames++;
+            if(currentFrames > 5) currentFrames = 0;
+        }
         // Draw
         BeginDrawing();
             
             ClearBackground(RAYWHITE);
             if(gameStart == true){
-                DrawTexture(backGround, 0, 0, WHITE);
+                DrawTexture(backGround, 0, 60, WHITE);
                 if(Button(mouseOn2, randBtnRec, startBtn, (Vector2){randBtnBound.x, randBtnBound.y})){
                    randNum = GetRandomValue(1, 6);
                    sprintf(randStr, "%d", randNum);
                 }
                 DrawText(randStr, 850, 200, 20, BLACK);
+                DrawRectanglePro(Char1, (Vector2){boardPosX[currentFrames], boardPosY[currentFrames]}, 0, BLACK);
             }else{
                 gameStart = Button(mouseOn1, startBtnRec, startBtn, (Vector2){startBtnBound.x, startBtnBound.y});
             }
-
-            
         EndDrawing();
         
     }
