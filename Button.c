@@ -20,9 +20,7 @@ int Button(bool mouseOn, Rectangle buttonRec, Texture2D btn, Vector2 pos){
     int btnState = 0;
     DrawTextureRec(btn, buttonRec, pos, WHITE);
     if(mouseOn){
-        if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
-            DrawTextureRec(btn, buttonRec, pos, BLACK);
-        }
+        if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)) btnState = 2;
         if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) btnState = 1;
     }else{
         btnState = 0;
@@ -47,22 +45,23 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "Snake Ladder - Computer programming");
     
-    Image bg = LoadImage("src/img/bg.png");
     Image btnImg = LoadImage("src/img/btn.png");
     
-    ImageResize(&bg, 800, 600);
-    Texture2D backGround = LoadTextureFromImage(bg);
+    Texture2D rollBtn = LoadTexture("src/img/roll.png");
+    Texture2D backGround = LoadTexture("src/img/bg.png");
     Texture2D startBtn = LoadTextureFromImage(btnImg);
     
     int boardPosX[6] = {-560, -490, -420, -350, -280, -210};
     int boardPosY[6] = {-530, -530, -530, -530, -530, -530};
+    
+    int rollFrameHeight = rollBtn.height / 2;
    
     Rectangle startBtnRec = {0, 0, startBtn.width, startBtn.height};
-    Rectangle randBtnRec = {0, 0, startBtn.width, startBtn.height};
+    Rectangle rollBtnRec = {0, 0, rollBtn.width, rollFrameHeight};
     Rectangle Char1 = {0, 0, 50, 50};
     
     Rectangle startBtnBound = {screenWidth / 2 - startBtn.width / 2, screenHeight / 4, startBtn.width, startBtn.height};
-    Rectangle randBtnBound = {850, 50, startBtn.width, startBtn.height};
+    Rectangle rollBtnBound = {1030, 570, rollBtn.width, rollFrameHeight};
     
     bool gameStart = false;
     bool mouseOn1, mouseOn2, mouseOn3, mouseOn4;
@@ -81,7 +80,7 @@ int main(void)
         
         Vector2 mousePos = GetMousePosition();
         mouseOn1 = IsMouseOver(mousePos, startBtnBound);
-        mouseOn2 = IsMouseOver(mousePos, randBtnBound);
+        mouseOn2 = IsMouseOver(mousePos, rollBtnBound);
         
         if(IsKeyPressed(KEY_F11)){
             ToggleFullscreen();
@@ -98,11 +97,14 @@ int main(void)
             
             ClearBackground(RAYWHITE);
             if(gameStart == true){
-                DrawTexture(backGround, 0, 60, WHITE);
-                if(Button(mouseOn2, randBtnRec, startBtn, (Vector2){randBtnBound.x, randBtnBound.y})){
+                DrawTexture(backGround, 0, 0, WHITE);
+                if(Button(mouseOn2, rollBtnRec, rollBtn, (Vector2){rollBtnBound.x, rollBtnBound.y}) == 1){
                    randNum = GetRandomValue(1, 6);
                    sprintf(randStr, "%d", randNum);
                 }
+                if(Button(mouseOn2, rollBtnRec, rollBtn, (Vector2){rollBtnBound.x, rollBtnBound.y}) == 2) rollBtnRec.y = rollFrameHeight;
+                else rollBtnRec.y = 0;
+                
                 DrawText(randStr, 850, 200, 20, BLACK);
                 DrawRectanglePro(Char1, (Vector2){boardPosX[currentFrames], boardPosY[currentFrames]}, 0, BLACK);
             }else{
@@ -112,8 +114,8 @@ int main(void)
         
     }
     
-    UnloadImage(bg);
     UnloadImage(btnImg);
+    UnloadTexture(rollBtn);
     UnloadTexture(startBtn);
     UnloadTexture(backGround);
 
