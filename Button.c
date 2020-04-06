@@ -16,16 +16,13 @@
 #include <time.h>
 
 //Check if mouseOver button is click buttonRec or not return btnState
-int Button(bool mouseOn, Rectangle buttonRec, Texture2D btn, Vector2 pos){
+int IsClicked(bool mouseOn){
     int btnState = 0;
-    DrawTextureRec(btn, buttonRec, pos, WHITE);
     if(mouseOn){
         if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)) btnState = 2;
         if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) btnState = 1;
-    }else{
-        btnState = 0;
     }
-         return btnState;
+    return btnState;
 }
 
 //Check if button is over given buttonRec or not return bool
@@ -48,14 +45,16 @@ int main(void)
     Image btnImg = LoadImage("src/img/btn.png");
     
     Texture2D rollBtn = LoadTexture("src/img/roll.png");
+    Texture2D menuBg = LoadTexture("src/img/menu.png");
     Texture2D backGround = LoadTexture("src/img/bg.png");
     Texture2D startBtn = LoadTextureFromImage(btnImg);
     
-    int boardPosX[6] = {-560, -490, -420, -350, -280, -210};
-    int boardPosY[6] = {-530, -530, -530, -530, -530, -530};
+    int boardPosX[40] = {-250, -340, -430, -520, -610, -700, -790, -880, -880, -880, -790, -700, -610, -520, -430, -340, -250, -160, -70, -70, -70, -160, -250, -340, -430, -520, -610, -700, -790, -880, -880, -880, -790, -700, -610, -520, -430, -340, -250, -160};
+    int boardPosY[40] = {-630, -630, -630, -630, -630, -630, -630, -630, -555, -485, -485, -485, -485, -485, -485, -485, -485, -485, -485, -410, -335, -335, -335, -335, -335, -335, -335, -335, -335, -335, -260, -185, -185, -185, -185, -185, -185, -185, -185, -185};
     
     int rollFrameHeight = rollBtn.height / 2;
    
+    Rectangle greenRec = {323, 620, 87, 70};
     Rectangle startBtnRec = {0, 0, startBtn.width, startBtn.height};
     Rectangle rollBtnRec = {0, 0, rollBtn.width, rollFrameHeight};
     Rectangle Char1 = {0, 0, 50, 50};
@@ -65,50 +64,59 @@ int main(void)
     
     bool gameStart = false;
     bool mouseOn1, mouseOn2, mouseOn3, mouseOn4;
+    
     int btnState = 0;
     int randNum;
+    int playerPos[4];
+    int playerPlay, playerTurn;
+    
     char randStr[3] = "";
-    int framesCounter = 0;
-    int currentFrames = 0;
     
     SetTargetFPS(60);
+    playerPos[0] = 0;
+    playerPos[1] = 0;
+    playerPos[2] = 0;
+    playerPos[3] = 0;
     
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
-        framesCounter++;
         
         Vector2 mousePos = GetMousePosition();
         mouseOn1 = IsMouseOver(mousePos, startBtnBound);
         mouseOn2 = IsMouseOver(mousePos, rollBtnBound);
+        
+        playerTurn = 0;
         
         if(IsKeyPressed(KEY_F11)){
             ToggleFullscreen();
             SetWindowPosition(50, 50);
         }
         
-        if( framesCounter >= (60/8) && gameStart == true){
-            framesCounter = 0;
-            currentFrames++;
-            if(currentFrames > 5) currentFrames = 0;
-        }
         // Draw
         BeginDrawing();
             
             ClearBackground(RAYWHITE);
             if(gameStart == true){
                 DrawTexture(backGround, 0, 0, WHITE);
-                if(Button(mouseOn2, rollBtnRec, rollBtn, (Vector2){rollBtnBound.x, rollBtnBound.y}) == 1){
+                DrawTextureRec(rollBtn, rollBtnRec, (Vector2){rollBtnBound.x, rollBtnBound.y}, WHITE);
+                if(IsClicked(mouseOn2) == 1){
+                   rollBtnRec.y = 0;
                    randNum = GetRandomValue(1, 6);
+                   playerPos[playerTurn] = playerPos[playerTurn] + randNum;
                    sprintf(randStr, "%d", randNum);
-                }
-                if(Button(mouseOn2, rollBtnRec, rollBtn, (Vector2){rollBtnBound.x, rollBtnBound.y}) == 2) rollBtnRec.y = rollFrameHeight;
-                else rollBtnRec.y = 0;
-                
-                DrawText(randStr, 850, 200, 20, BLACK);
-                DrawRectanglePro(Char1, (Vector2){boardPosX[currentFrames], boardPosY[currentFrames]}, 0, BLACK);
+                }else if(IsClicked(mouseOn2) == 2) rollBtnRec.y = rollFrameHeight;
+                if(playerPos[playerTurn] > 39) playerPos[playerTurn] = 39 - (playerPos[playerTurn] % 39);
+
+                DrawRectanglePro(Char1, (Vector2){boardPosX[playerPos[playerTurn]], boardPosY[playerPos[playerTurn]]}, 0, BLACK);
             }else{
-                gameStart = Button(mouseOn1, startBtnRec, startBtn, (Vector2){startBtnBound.x, startBtnBound.y});
+                DrawTexture(menuBg, 0, 0, WHITE);
+                DrawTextureRec(startBtn, startBtnRec, (Vector2){startBtnBound.x, startBtnBound.y}, WHITE);
+                if(IsClicked(mouseOn1) == 2){
+                    DrawTextureRec(startBtn, startBtnRec, (Vector2){startBtnBound.x, startBtnBound.y}, BLACK);
+                }else if(IsClicked(mouseOn1) == 1){
+                    gameStart = true;
+                }
             }
         EndDrawing();
         
@@ -116,6 +124,7 @@ int main(void)
     
     UnloadImage(btnImg);
     UnloadTexture(rollBtn);
+    UnloadTexture(menuBg);
     UnloadTexture(startBtn);
     UnloadTexture(backGround);
 
