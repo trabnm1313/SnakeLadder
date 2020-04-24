@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include "raylib.h"
 #include <time.h>
+#include <string.h>
+#include <ctype.h>
 
 //Check if mouseOver button is click buttonRec or not return btnState
 int IsClicked(bool mouseOn){
@@ -60,13 +62,18 @@ int main(void)
     
     //Texture variable.
     Texture2D rollBtn = LoadTexture("src/img/roll.png");
-    Texture2D battleBtn = LoadTexture("src/img/roll.png");
+    Texture2D battleBtn = LoadTexture("src/img/battle.png");
     Texture2D menuBg = LoadTexture("src/img/menu.png");
     Texture2D backGround = LoadTexture("src/img/bg.png");
     Texture2D startBtn = LoadTextureFromImage(btnImg);
     
-    //Color Array.
-    Color playerColor[4];
+    //Struct?
+    struct character{
+        int playerPos;
+        int playerHP;
+        bool enemyWin;
+        Color playerColor;
+    }playerInfo[4];
     
     //board slot position.
     int boardPosX[40] = {-250, -340, -430, -520, -610, -700, -790, -880, -880, -880, -790, -700, -610, -520, -430, -340, -250, -160, -70, -70, -70, -160, -250, -340, -430, -520, -610, -700, -790, -880, -880, -880, -790, -700, -610, -520, -430, -340, -250, -160};
@@ -88,35 +95,37 @@ int main(void)
     Rectangle battleBtnBound = {1025, 25, battleBtn.width, rollFrameHeight};
     
     //Game state and true/false variable.
-    bool gameStart = false, battleBegin = false, playerRoll = false, battleDone = false, delayWin = false;
+    bool gameStart = false, battleBegin = false, playerRoll = false, battleDone = false, delayable = false, trap=false, enemyFight=false;
     bool mouseOn1, mouseOn2, mouseOn3, mouseOnPlayerSelect[3];
     
     //Integer variable.
     int btnState = 0;
     int randNum, randNumBattle;
-    int playerPos[4], playerNum=2;
-    int playerPlay, playerTurn=0, loser;
+    int playerNum=2;
+    int playerTurn=0;
     int samePos = 0, player1Randnum, player2Randnum, clickBattle=0;
+    int enemyPos[4] = {5, 15, 24, 33};
     
     //Character/String variable.
-    char randStr[3] = "", player1Randstr[3] = "", player2Randstr[3] = "", playerPosStr[4][3];
+    char randStr[3] = "", player1Randstr[3] = "", player2Randstr[3] = "", playerPosStr[4][3], samePosStr[3], playerTurnStr[3], battleMsg[50], playerHPStr[4][3];
     
     SetTargetFPS(60);
     
     //Init.
-    playerPos[0] = 0;
-    playerPos[1] = 0;
-    playerPos[2] = 0;
-    playerPos[3] = 0;
-    
+    for(int i=0; i<4; i++){
+        playerInfo[i].playerPos = 0;
+        playerInfo[i].playerHP = 2;
+        playerInfo[i].enemyWin = false;
+    }
+
     playerSelectRec[0] = (Rectangle){850, 30, 100, 50};
     playerSelectRec[1] = (Rectangle){1000, 30, 100, 50};
     playerSelectRec[2] = (Rectangle){1150, 30, 100, 50};
     
-    playerColor[0] = (Color){ 0, 0, 0, 255 };
-    playerColor[1] = (Color){ 230, 41, 55, 255 };
-    playerColor[2] = (Color){ 0, 228, 48, 255 };
-    playerColor[3] = (Color){ 0, 121, 241, 255 };
+    playerInfo[0].playerColor = (Color){ 0, 0, 0, 255 };
+    playerInfo[1].playerColor = (Color){ 230, 41, 55, 255 };
+    playerInfo[2].playerColor = (Color){ 0, 228, 48, 255 };
+    playerInfo[3].playerColor = (Color){ 0, 121, 241, 255 };
     
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
@@ -138,10 +147,10 @@ int main(void)
         }
         if(IsKeyPressed(KEY_P)){
             gameStart = false;
-            playerPos[0] = 0;
-            playerPos[1] = 0;
-            playerPos[2] = 0;
-            playerPos[3] = 0;
+            playerInfo[0].playerPos = 0;
+            playerInfo[1].playerPos = 0;
+            playerInfo[2].playerPos = 0;
+            playerInfo[3].playerPos = 0;
             *player1Randstr = "";
             *player2Randstr = "";
             playerTurn = 0;
@@ -149,6 +158,12 @@ int main(void)
             battleBegin = false;
             battleDone = false;
             playerRoll = false;
+            playerInfo[0].playerHP = 2;
+            playerInfo[1].playerHP = 2;
+            playerInfo[2].playerHP = 2;
+            playerInfo[3].playerHP = 2;
+            
+            
         }
         
         //Cycle player turn from player 1 to player 4;
@@ -192,31 +207,40 @@ int main(void)
                     }
                     //Draw random number of each player in battle.
                     DrawText(player1Randstr, 100, 20, 50, BLACK);
-                    DrawText(player2Randstr, 200, 20, 50, BLACK);
+                    DrawText(player2Randstr, 200, 20, 50, BLACK); 
                     //Comparing random number from each player and battle result.
                     if(clickBattle == 1){
-                            //Re-draw button to first frame prevent second frame of getting delay.
-                            battleBtnRec.y = 0;
-                            DrawTextureRec(battleBtn, battleBtnRec, (Vector2){battleBtnBound.x, battleBtnBound.y}, WHITE);
-                            if(player1Randnum > player2Randnum){
-                                playerPos[playerTurn] -= 1;
-                                clickBattle = 0;
-                                battleBegin = false;
-                                battleDone = true;
-                            }else if(player2Randnum > player1Randnum){
-                                playerPos[samePos] -= 1;
-                                clickBattle = 0;
-                                battleBegin = false;
-                                battleDone = true;
+                        //Re-draw button to first frame prevent second frame of getting delay.
+                        battleBtnRec.y = 0;
+                        DrawTextureRec(battleBtn, battleBtnRec, (Vector2){battleBtnBound.x, battleBtnBound.y}, WHITE);
+                        if(player1Randnum > player2Randnum){
+                            if(enemyFight){
+                                playerInfo[samePos].enemyWin = true;
                             }else{
-                                clickBattle = 0;
-                                player1Randnum = 0;
-                                player2Randnum = 0;
-                                *player1Randstr = "?";
-                                *player2Randstr = "?";
+                                playerInfo[playerTurn].playerHP -= 1;
+                                playerInfo[playerTurn].playerPos -= 1;
                             }
-                            //Make delayable after progress this frame.
-                            delayWin = true;
+                            battleBegin = false;
+                            battleDone = true;
+                            clickBattle = 0;
+                        }else if(player2Randnum > player1Randnum){
+                            if(enemyFight){
+                                playerInfo[samePos].enemyWin = true;
+                            }
+                            playerInfo[samePos].playerHP -=1;
+                            playerInfo[samePos].playerPos -= 1;
+                            clickBattle = 0;
+                            battleBegin = false;
+                            battleDone = true;
+                        }else{
+                            clickBattle = 0;
+                            player1Randnum = 0;
+                            player2Randnum = 0;
+                            *player1Randstr = "?";
+                            *player2Randstr = "?";
+                        }
+                        //Make delayable after progress this frame.
+                        delayable = true;
                     }
                     
                 //NO Battle need to begin.
@@ -227,36 +251,70 @@ int main(void)
                     if(IsClicked(mouseOn2) == 1){
                         rollBtnRec.y = 0;
                         randNum = GetRandomValue(1, 6);
-                        playerPos[playerTurn] = playerPos[playerTurn] + randNum;
+                        playerInfo[playerTurn].playerPos = playerInfo[playerTurn].playerPos + randNum;
                         sprintf(randStr, "%d", randNum);
                         playerRoll = true;
+                        if(playerInfo[playerTurn].enemyWin) playerInfo[playerTurn].enemyWin = false;
                     }else if(IsClicked(mouseOn2) == 2) rollBtnRec.y = rollFrameHeight;
                 }
-                //Draw random number that roll from rollBtn.
-                DrawText(randStr, 1130, 500, 50, BLACK);
+                
+                
                 //Check if player exceed board limit, player will revert back for each number exceed.
-                if(playerPos[playerTurn] > 39) playerPos[playerTurn] = 39 - (playerPos[playerTurn] % 39);
-                
-                //Draw player character
-                for(int i=0; i<playerNum; i++){
-                    DrawRectanglePro(Char1, (Vector2){boardPosX[playerPos[i]], boardPosY[playerPos[i]]}, 0, playerColor[i]);
+                if(playerInfo[playerTurn].playerPos > 39) playerInfo[playerTurn].playerPos = 39 - (playerInfo[playerTurn].playerPos % 39);
+                if(playerInfo[playerTurn].playerPos == 11 || playerInfo[playerTurn].playerPos == 28 || playerInfo[playerTurn].playerPos == 35 || playerInfo[playerTurn].playerPos == 37){
+                    trap = true;
+                    DrawText("Get dunked on", 500, 30, 50, BLACK);
                 }
                 
-                //Buffer player position to string and Draw it.
+                //Loop checking.
                 for(int i=0; i<playerNum; i++){
-                sprintf(playerPosStr[i], "%d", playerPos[i]);
-                DrawText(playerPosStr[i], 1030, 200+(i*100), 40, playerColor[i]);
-                }
+                    
+                    //Draw player character
+                    DrawRectanglePro(Char1, (Vector2){boardPosX[playerInfo[i].playerPos], boardPosY[playerInfo[i].playerPos]}, 0, playerInfo[i].playerColor);
                 
-                //Check IF there any battle need to begin in game.
-                for(int i=0; i<playerNum; i++){
-                    if(playerPos[playerTurn] == playerPos[i] && i != playerTurn && playerPos[playerTurn] != 0){
+                    //Buffer player position to string and Draw it.
+                    sprintf(playerPosStr[i], "%d", playerInfo[i].playerPos);
+                    sprintf(playerHPStr[i], "%d", playerInfo[i].playerHP);
+                    DrawText(playerPosStr[i], 1030, 200+(i*100), 40, playerInfo[i].playerColor);
+                    DrawText(playerHPStr[i], 1080, 200+(i*100), 40, GREEN);
+                
+                    //HP Checking
+                    if(playerInfo[i].playerHP == 0){
+                        playerInfo[i].playerHP = 2;
+                        playerInfo[i].playerPos = (playerInfo[i].playerPos - 2) * (playerInfo[i].playerPos - 2 >= 0);
+                    }
+                    
+                    //Check IF there's any battle need to begin between player and AI.
+                    for(int j=0; j<4; j++){
+                        if(playerInfo[i].playerPos == enemyPos[j] && !playerInfo[i].enemyWin){
+                            battleBegin = true;
+                            samePos = i;
+                            enemyFight = true;
+                            playerRoll = false;
+                            battleDone = false;
+                        }
+                    }
+                        
+                    //Check IF there's any battle need to begin in game.
+                    if(playerInfo[playerTurn].playerPos == playerInfo[i].playerPos && i != playerTurn && playerInfo[playerTurn].playerPos != 0 && (playerInfo[playerTurn].playerHP != 0 && playerInfo[i].playerHP != 0) && !enemyFight){
                         battleBegin = true;
                         samePos = i;
                         playerRoll = false;
                         battleDone = false;
+                        sprintf(playerTurnStr, "%d", playerTurn+1);
+                        sprintf(samePosStr, "%d", samePos+1);
+                        strcpy(battleMsg, "Battle begin between ");
+                        strcat(battleMsg, "Player ");
+                        strcat(battleMsg, playerTurnStr);
+                        strcat(battleMsg, " and Player ");
+                        strcat(battleMsg, samePosStr);
                     }
                 }
+            
+            if(battleBegin || battleDone){
+                DrawText(battleMsg, 300, 45, 30, BLACK);
+            }
+
                 
             //Game didn't start yet.
             }else{
@@ -279,15 +337,36 @@ int main(void)
         //END Drawing progress.    
         EndDrawing();
         
+        //Check if any player step on a trap(ladder).
+        if(trap == true){
+            delay(1);
+            if(playerInfo[playerTurn].playerPos == 11) playerInfo[playerTurn].playerPos = 4;
+            else if(playerInfo[playerTurn].playerPos == 28) playerInfo[playerTurn].playerPos = 13;
+            else if(playerInfo[playerTurn].playerPos == 35) playerInfo[playerTurn].playerPos = 26;
+            else if(playerInfo[playerTurn].playerPos == 37) playerInfo[playerTurn].playerPos = 16;
+            trap = false;
+        }
+        
+        //Check again if any ppl trap down and place at same pos.
+        for(int i=0; i<playerNum; i++){
+            if(playerInfo[playerTurn].playerPos == playerInfo[i].playerPos && i != playerTurn && playerInfo[playerTurn].playerPos != 0){
+                battleBegin = true;
+                samePos = i;
+                playerRoll = false;
+                battleDone = false;
+            }
+        }
+        
         //Check if need to delay.
-        if(delayWin) delay(1);
-        delayWin = false;
+        if(delayable) delay(1);
+        delayable = false;
         
         //Check for roll and battle state.
         if(playerRoll == true || battleDone == true){
             playerTurn += 1;
             playerRoll = false;
             battleDone = false;
+            enemyFight = false;
         }
     }
     
