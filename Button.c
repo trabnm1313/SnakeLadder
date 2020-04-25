@@ -72,6 +72,9 @@ int main(void)
         int playerPos;
         int playerHP;
         bool enemyWin;
+        bool itemClaim;
+        bool shieldOn;
+        bool bootsOn;
         Color playerColor;
     }playerInfo[4];
     
@@ -95,7 +98,7 @@ int main(void)
     Rectangle battleBtnBound = {1025, 25, battleBtn.width, rollFrameHeight};
     
     //Game state and true/false variable.
-    bool gameStart = false, battleBegin = false, playerRoll = false, battleDone = false, delayable = false, trap=false, enemyFight=false;
+    bool gameStart = false, battleBegin = false, playerRoll = false, battleDone = false, delayable = false, trap=false, enemyFight=false, itemEvent=false;
     bool mouseOn1, mouseOn2, mouseOn3, mouseOnPlayerSelect[3];
     
     //Integer variable.
@@ -103,8 +106,8 @@ int main(void)
     int randNum, randNumBattle;
     int playerNum=2;
     int playerTurn=0;
-    int samePos = 0, player1Randnum, player2Randnum, clickBattle=0;
-    int enemyPos[4] = {5, 15, 24, 33};
+    int samePos=0, samePosItem=0, player1Randnum, player2Randnum, itemRand=0, clickBattle=0;
+    int enemyPos[4] = {5, 15, 24, 33}, itemPos[3] = {7, 20, 30};
     
     //Character/String variable.
     char randStr[3] = "", player1Randstr[3] = "", player2Randstr[3] = "", playerPosStr[4][3], samePosStr[3], playerTurnStr[3], battleMsg[50], playerHPStr[4][3];
@@ -116,6 +119,9 @@ int main(void)
         playerInfo[i].playerPos = 0;
         playerInfo[i].playerHP = 2;
         playerInfo[i].enemyWin = false;
+        playerInfo[i].itemClaim = false;
+        playerInfo[i].shieldOn = false;
+        playerInfo[i].bootsOn = false;
     }
 
     playerSelectRec[0] = (Rectangle){850, 30, 100, 50};
@@ -183,6 +189,15 @@ int main(void)
                 //Draw background.
                 DrawTexture(backGround, 0, 0, WHITE);
                 
+                //ItemClaiming Event
+                if(itemEvent && !playerInfo[samePosItem].itemClaim){
+                    itemRand = GetRandomValue(1, 2);
+                    if(itemRand == 1) playerInfo[samePosItem].shieldOn = true;
+                    else if(itemRand == 2) playerInfo[samePosItem].bootsOn = true;
+                    itemEvent = false;
+                    playerInfo[samePosItem].itemClaim = true;
+                }
+                
                 //Check if battle is need to begin.
                 if(battleBegin == true){
                     //Draw Battle button
@@ -219,6 +234,7 @@ int main(void)
                             }else{
                                 playerInfo[playerTurn].playerHP -= 1;
                                 playerInfo[playerTurn].playerPos -= 1;
+                                playerInfo[playerTurn].itemClaim = false;
                             }
                             battleBegin = false;
                             battleDone = true;
@@ -229,6 +245,7 @@ int main(void)
                             }
                             playerInfo[samePos].playerHP -=1;
                             playerInfo[samePos].playerPos -= 1;
+                            playerInfo[playerTurn].itemClaim = false;
                             clickBattle = 0;
                             battleBegin = false;
                             battleDone = true;
@@ -249,9 +266,14 @@ int main(void)
                     DrawTextureRec(rollBtn, rollBtnRec, (Vector2){rollBtnBound.x, rollBtnBound.y}, WHITE);
                     //Random number and check for button press when rollBtn is pressed.
                     if(IsClicked(mouseOn2) == 1){
+                        playerInfo[playerTurn].itemClaim = false;
                         rollBtnRec.y = 0;
                         randNum = GetRandomValue(1, 6);
                         playerInfo[playerTurn].playerPos = playerInfo[playerTurn].playerPos + randNum;
+                        if(playerInfo[playerTurn].bootsOn){
+                            playerInfo[playerTurn].playerPos += 1;
+                            playerInfo[playerTurn].bootsOn = false;
+                        }
                         sprintf(randStr, "%d", randNum);
                         playerRoll = true;
                         if(playerInfo[playerTurn].enemyWin) playerInfo[playerTurn].enemyWin = false;
@@ -259,8 +281,10 @@ int main(void)
                 }
                 
                 
+                
                 //Check if player exceed board limit, player will revert back for each number exceed.
                 if(playerInfo[playerTurn].playerPos > 39) playerInfo[playerTurn].playerPos = 39 - (playerInfo[playerTurn].playerPos % 39);
+                //Check for enemy trap.
                 if(playerInfo[playerTurn].playerPos == 11 || playerInfo[playerTurn].playerPos == 28 || playerInfo[playerTurn].playerPos == 35 || playerInfo[playerTurn].playerPos == 37){
                     trap = true;
                     DrawText("Get dunked on", 500, 30, 50, BLACK);
@@ -277,9 +301,15 @@ int main(void)
                     sprintf(playerHPStr[i], "%d", playerInfo[i].playerHP);
                     DrawText(playerPosStr[i], 1030, 200+(i*100), 40, playerInfo[i].playerColor);
                     DrawText(playerHPStr[i], 1080, 200+(i*100), 40, GREEN);
+                    
+                    //Draw owned item
+                    if(playerInfo[i].shieldOn) DrawText("ON", 1120, 200+(i*100), 25, BLACK);
+                    else DrawText("OFF", 1120, 200+(i*100), 30, BLACK);
+                    if(playerInfo[i].bootsOn) DrawText("ON", 1200, 200+(i*100), 25, BLACK);
+                    else DrawText("OFF", 1200, 200+(i*100), 30, BLACK);
                 
                     //HP Checking
-                    if(playerInfo[i].playerHP == 0){
+                    if(playerInfo[i].playerHP == 0 && !trap){
                         playerInfo[i].playerHP = 2;
                         playerInfo[i].playerPos = (playerInfo[i].playerPos - 2) * (playerInfo[i].playerPos - 2 >= 0);
                     }
@@ -287,18 +317,40 @@ int main(void)
                     //Check IF there's any battle need to begin between player and AI.
                     for(int j=0; j<4; j++){
                         if(playerInfo[i].playerPos == enemyPos[j] && !playerInfo[i].enemyWin){
-                            battleBegin = true;
                             samePos = i;
+                            if(playerInfo[samePos].shieldOn){
+                                playerInfo[samePos].playerPos += 1;
+                                playerInfo[samePos].shieldOn = false;
+                                continue;
+                            }
+                            battleBegin = true;
                             enemyFight = true;
                             playerRoll = false;
                             battleDone = false;
                         }
                     }
+                    
+                    //Check IF there's any player can claim item.
+                    for(int j=0; j<4; j++){
+                        if(playerInfo[i].playerPos == itemPos[j] && !playerInfo[i].itemClaim){
+                            samePosItem = i;
+                            itemEvent = true;
+                        }
+                    }
                         
                     //Check IF there's any battle need to begin in game.
-                    if(playerInfo[playerTurn].playerPos == playerInfo[i].playerPos && i != playerTurn && playerInfo[playerTurn].playerPos != 0 && (playerInfo[playerTurn].playerHP != 0 && playerInfo[i].playerHP != 0) && !enemyFight){
-                        battleBegin = true;
+                    if(playerInfo[playerTurn].playerPos == playerInfo[i].playerPos && i != playerTurn && playerInfo[playerTurn].playerPos != 0 && !enemyFight){
                         samePos = i;
+                        if(playerInfo[playerTurn].shieldOn){
+                            playerInfo[playerTurn].playerPos += 1;
+                            playerInfo[playerTurn].shieldOn = false;
+                            continue;
+                        }else if(playerInfo[samePos].shieldOn){
+                            playerInfo[samePos].playerPos += 1;
+                            playerInfo[samePos].shieldOn = false;
+                            continue;
+                        }
+                        battleBegin = true;
                         playerRoll = false;
                         battleDone = false;
                         sprintf(playerTurnStr, "%d", playerTurn+1);
@@ -311,6 +363,7 @@ int main(void)
                     }
                 }
             
+            //battleMessage
             if(battleBegin || battleDone){
                 DrawText(battleMsg, 300, 45, 30, BLACK);
             }
