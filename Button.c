@@ -74,6 +74,7 @@ int main(void)
         int playerHP;
         bool enemyWin;
         bool itemClaim;
+        bool healClaim;
         bool shieldOn;
         bool bootsOn;
         Color playerColor;
@@ -99,16 +100,16 @@ int main(void)
     Rectangle battleBtnBound = {1025, 25, battleBtn.width, rollFrameHeight};
     
     //Game state and true/false variable.
-    bool gameStart = false, battleBegin = false, playerRoll = false, battleDone = false, delayable = false, trap=false, enemyFight=false, itemEvent=false, tied=false;
+    bool gameStart = false, battleBegin = false, playerRoll = false, battleDone = false, delayable = false, trap=false, enemyFight=false, itemEvent=false, tied=false, wait=false, healEvent=false;
     bool mouseOn1, mouseOn2, mouseOn3, mouseOnPlayerSelect[3];
     
     //Integer variable.
     int btnState = 0, battleMsgShow=0;
-    int randNum, randNumBattle;
+    int randNum, randNumBattle, randPlayer;
     int playerNum=2;
     int playerTurn=0;
-    int samePos=0, samePosItem=0, player1Randnum, player2Randnum, itemRand=0, clickBattle=0;
-    int enemyPos[4] = {5, 15, 24, 33}, itemPos[3] = {7, 20, 30};
+    int samePos=0, samePosItem=-1, samePosHeal=-1, player1Randnum, player2Randnum, itemRand=0, clickBattle=0, jackPot=100;
+    int enemyPos[4] = {5, 15, 24, 33}, itemPos[3] = {7, 20, 30}, healPos[3]={18, 27, 34};
     
     //Character/String variable.
     char randStr[3] = "", player1Randstr[3] = "", player2Randstr[3] = "", playerPosStr[4][3], samePosStr[3], playerTurnStr[3], battleMsg[50], playerHPStr[4][3], rollNumber[30]="", player1[10]="", player2[10]="";
@@ -123,6 +124,7 @@ int main(void)
         playerInfo[i].itemClaim = false;
         playerInfo[i].shieldOn = false;
         playerInfo[i].bootsOn = false;
+        playerInfo[i].healClaim = false;
     }
 
     playerSelectRec[0] = (Rectangle){850, 30, 100, 50};
@@ -190,6 +192,23 @@ int main(void)
                 //Draw background.
                 DrawTexture(backGround, 0, 0, WHITE);
                 
+                //HealClaiming Event
+                if(healEvent && !playerInfo[samePosHeal].healClaim){
+                    jackPot = GetRandomValue(1, 100);
+                    if(jackPot == 1){
+                        playerInfo[samePosHeal].playerHP += 3;
+                        sprintf(player1, "Jackpot!! P%d got heal by 3", samePosHeal);
+                    }else{
+                        playerInfo[samePosHeal].playerHP += 1;
+                        sprintf(player1, "P%d got heal by 1", samePosHeal);
+                    }
+                    DrawText(player1, 300, 45, 40, BLACK);
+                    delayable = true;
+                    wait = true;
+                    healEvent = false;
+                    playerInfo[samePosItem].healClaim = true;
+                }
+                
                 //ItemClaiming Event
                 if(itemEvent && !playerInfo[samePosItem].itemClaim){
                     sprintf(player1, "P%d obtain item ", samePosItem);
@@ -202,8 +221,14 @@ int main(void)
                     else if(itemRand == 2){
                         playerInfo[samePosItem].bootsOn = true;
                         DrawText("*Boots*!", 600, 45, 40, BLACK);
+                    }else if(itemRand == 3){
+                        randPlayer = GetRandomValue(0, playerNum);
+                        randNum = GetRandomValue(1, 3);
+                        playerInfo[randPlayer].playerPos -= randNum;
+                        DrawText("*Curse* and someone got cursed!", 600, 45, 35, BLACK);
                     }
                     delayable = true;
+                    wait = true;
                     itemEvent = false;
                     playerInfo[samePosItem].itemClaim = true;
                 }
@@ -212,7 +237,7 @@ int main(void)
                 if(battleBegin == true){
                     sprintf(player1, "P%d: ", samePos+1);
                     sprintf(player2, "P%d: ", playerTurn+1);
-                    if(battleMsgShow == 1 && !tied){
+                    if(battleMsgShow == 1 && !tied && !wait){
                         DrawText(battleMsg, 300, 45, 40, BLACK);
                         battleMsgShow = 2;
                         delayable = true;
@@ -220,7 +245,8 @@ int main(void)
                         DrawText("Tie!", 300, 45, 40, BLACK);
                         tied = false;
                         delayable = true;
-                    }else{
+                    }else if(wait);
+                    else{
                         //Draw Battle button
                         DrawTextureRec(battleBtn, battleBtnRec, (Vector2){battleBtnBound.x, battleBtnBound.y}, WHITE);
                     }
@@ -306,7 +332,7 @@ int main(void)
                         playerInfo[playerTurn].itemClaim = false;
                         rollBtnRec.y = 0;
                         randNum = GetRandomValue(1, 6);
-                        playerInfo[playerTurn].playerPos = playerInfo[playerTurn].playerPos + randNum;
+                        playerInfo[playerTurn].playerPos = playerInfo[playerTurn].playerPos + 7;
                         if(playerInfo[playerTurn].bootsOn){
                             playerInfo[playerTurn].playerPos += GetRandomValue(1, 3);
                             playerInfo[playerTurn].bootsOn = false;
@@ -338,6 +364,9 @@ int main(void)
                 
                 //Loop checking.
                 for(int i=0; i<playerNum; i++){
+
+                    //Check if player pos is negative and change back to 0
+                    if(playerInfo[i].playerPos < 0) playerInfo[i].playerPos = 0;
                     
                     //Draw player character
                     DrawRectanglePro(Char1, (Vector2){boardPosX[playerInfo[i].playerPos], boardPosY[playerInfo[i].playerPos]}, 0, playerInfo[i].playerColor);
@@ -382,6 +411,14 @@ int main(void)
                         if(playerInfo[i].playerPos == itemPos[j] && !playerInfo[i].itemClaim){
                             samePosItem = i;
                             itemEvent = true;
+                        }
+                    }
+                    
+                    //Check IF there's any player step on heal tile.
+                    for(int j=0; j<4; j++){
+                        if(playerInfo[i].playerPos == healPos[j] && !playerInfo[i].healClaim){
+                            samePosHeal = i;
+                            healEvent = true;
                         }
                     }
                         
@@ -462,6 +499,7 @@ int main(void)
         //Check if need to delay.
         if(delayable) delay(1);
         delayable = false;
+        wait = false;
         
         //Check for roll and battle state.
         if(playerRoll == true || battleDone == true){
