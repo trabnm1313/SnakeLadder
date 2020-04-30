@@ -100,7 +100,7 @@ int main(void)
     Rectangle battleBtnBound = {1025, 25, battleBtn.width, rollFrameHeight};
     
     //Game state and true/false variable.
-    bool gameStart = false, battleBegin = false, playerRoll = false, battleDone = false, delayable = false, trap=false, enemyFight=false, itemEvent=false, tied=false, wait=false, healEvent=false;
+    bool gameStart=false, gameEnd=false, battleBegin=false, playerRoll=false, battleDone=false, delayable=false, trap=false, enemyFight=false, itemEvent=false, tied=false, wait=false, healEvent=false;
     bool mouseOn1, mouseOn2, mouseOn3, mouseOnPlayerSelect[3];
     
     //Integer variable.
@@ -108,7 +108,7 @@ int main(void)
     int randNum, randNumBattle, randPlayer;
     int playerNum=2;
     int playerTurn=0;
-    int samePos=0, samePosItem=-1, samePosHeal=-1, player1Randnum, player2Randnum, itemRand=0, clickBattle=0, jackPot=100;
+    int samePos=0, samePosItem=-1, samePosHeal=-1, player1Randnum, player2Randnum, itemRand=0, clickBattle=0, jackPot=100, bootsNum=0;
     int enemyPos[4] = {5, 15, 24, 33}, itemPos[3] = {7, 20, 30}, healPos[3]={18, 27, 34};
     
     //Character/String variable.
@@ -206,7 +206,7 @@ int main(void)
                     delayable = true;
                     wait = true;
                     healEvent = false;
-                    playerInfo[samePosItem].healClaim = true;
+                    playerInfo[samePosHeal].healClaim = true;
                 }
                 
                 //ItemClaiming Event
@@ -216,16 +216,16 @@ int main(void)
                     DrawText(player1, 300, 45, 40, BLACK);
                     if(itemRand == 1) {
                         playerInfo[samePosItem].shieldOn = true;
-                        DrawText("*Shield*!", 600, 45, 40, BLACK);
+                        DrawText("*Shield*!", 600, 45, 40, YELLOW);
                     }
                     else if(itemRand == 2){
                         playerInfo[samePosItem].bootsOn = true;
-                        DrawText("*Boots*!", 600, 45, 40, BLACK);
+                        DrawText("*Boots*!", 600, 45, 40, BLUE);
                     }else if(itemRand == 3){
                         randPlayer = GetRandomValue(0, playerNum);
                         randNum = GetRandomValue(1, 3);
                         playerInfo[randPlayer].playerPos -= randNum;
-                        DrawText("*Curse* and someone got cursed!", 600, 45, 35, BLACK);
+                        DrawText("*Curse* and someone got cursed!", 600, 45, 35, RED);
                     }
                     delayable = true;
                     wait = true;
@@ -271,10 +271,10 @@ int main(void)
                         *player2Randstr = "?";
                     }
                     //Draw random number of each player in battle.
-                    DrawText(player1, 30, 40, 45, BLACK);
+                    DrawText(player1, 30, 40, 45, playerInfo[playerTurn].playerColor);
                     DrawText(player1Randstr, 100, 40, 45, BLACK);
-                    if(enemyFight) DrawText("AI: ", 160, 40, 45, BLACK);
-                    else DrawText(player2, 160, 40, 45, BLACK);
+                    if(enemyFight) DrawText("AI: ", 160, 40, 45, WHITE);
+                    else DrawText(player2, 160, 40, 45, playerInfo[samePos].playerColor);
                     DrawText(player2Randstr, 250, 40, 45, BLACK); 
                     //Comparing random number from each player and battle result.
                     if(clickBattle == 1){
@@ -285,10 +285,10 @@ int main(void)
                             if(enemyFight){
                                 playerInfo[samePos].enemyWin = true;
                                 playerInfo[samePos].playerPos += 1;
-                                DrawText("Player win!", 300, 45, 40, BLACK);
+                                DrawText("Player win!", 300, 45, 40, playerInfo[playerTurn].playerColor);
                                 enemyFight = false;
                             }else{
-                                DrawText("P1 win!", 300, 45, 40, BLACK);
+                                DrawText("P1 win!", 300, 45, 40, playerInfo[samePos].playerColor);
                                 playerInfo[playerTurn].playerHP -= 1;
                                 playerInfo[playerTurn].playerPos -= 1;
                                 playerInfo[playerTurn].itemClaim = false;
@@ -300,9 +300,9 @@ int main(void)
                         }else if(player2Randnum > player1Randnum){
                             if(enemyFight){
                                 playerInfo[samePos].enemyWin = true;
-                                DrawText("Enemy win!", 300, 45, 40, BLACK);
+                                DrawText("Enemy win!", 300, 45, 40, WHITE);
                                 enemyFight = false;
-                            }else DrawText("P2 Win!", 300, 45, 40, BLACK);
+                            }else DrawText("P2 Win!", 300, 45, 40, playerInfo[playerTurn].playerColor);
                             playerInfo[samePos].playerHP -=1;
                             playerInfo[samePos].playerPos -= 1;
                             playerInfo[samePos].itemClaim = false;
@@ -330,11 +330,13 @@ int main(void)
                     //Random number and check for button press when rollBtn is pressed.
                     if(IsClicked(mouseOn2) == 1){
                         playerInfo[playerTurn].itemClaim = false;
+                        playerInfo[playerTurn].healClaim = false;
                         rollBtnRec.y = 0;
                         randNum = GetRandomValue(1, 6);
-                        playerInfo[playerTurn].playerPos = playerInfo[playerTurn].playerPos + 7;
+                        playerInfo[playerTurn].playerPos = playerInfo[playerTurn].playerPos + randNum;
                         if(playerInfo[playerTurn].bootsOn){
-                            playerInfo[playerTurn].playerPos += GetRandomValue(1, 3);
+                            bootsNum = GetRandomValue(1, 3);
+                            playerInfo[playerTurn].playerPos += bootsNum;
                             playerInfo[playerTurn].bootsOn = false;
                         }
                         sprintf(randStr, "%d", randNum);
@@ -346,14 +348,18 @@ int main(void)
                         strcat(rollNumber, playerTurnStr);
                         strcat(rollNumber, " rolled ");
                         strcat(rollNumber, randStr);
-                        DrawText(rollNumber, 1040, 520, 27, BLACK);
+                        DrawText(rollNumber, 1040, 660, 20, BLACK);
                         strcpy(rollNumber, "");
                         delayable = true;
                     }else if(IsClicked(mouseOn2) == 2) rollBtnRec.y = rollFrameHeight;
                 }
                 
                 
-                
+                //GameEnd Condition
+                if(playerInfo[playerTurn].playerPos == 39){
+                    gameEnd = true;
+                    gameStart = false;
+                }
                 //Check if player exceed board limit, player will revert back for each number exceed.
                 if(playerInfo[playerTurn].playerPos > 39) playerInfo[playerTurn].playerPos = 39 - (playerInfo[playerTurn].playerPos % 39);
                 //Check for enemy trap.
@@ -361,6 +367,12 @@ int main(void)
                     trap = true;
                     DrawText("Get dunked on", 500, 30, 50, BLACK);
                 }
+                
+                //Draw info topic
+                DrawText("Pos", 1030, 150, 20, BLACK);
+                DrawText("HP", 1080, 150, 20, BLACK);
+                DrawText("Shield", 1120, 150, 20, BLACK);
+                DrawText("Boots", 1200, 150, 20, BLACK);
                 
                 //Loop checking.
                 for(int i=0; i<playerNum; i++){
@@ -377,11 +389,14 @@ int main(void)
                     DrawText(playerPosStr[i], 1030, 200+(i*100), 40, playerInfo[i].playerColor);
                     DrawText(playerHPStr[i], 1080, 200+(i*100), 40, GREEN);
                     
+                    //Draw playerTurn outline
+                    if(i == playerTurn) DrawRectangleLines(1025, 185+(i*100), 250, 65, GREEN);
+                    
                     //Draw owned item
-                    if(playerInfo[i].shieldOn) DrawText("ON", 1120, 200+(i*100), 25, BLACK);
-                    else DrawText("OFF", 1120, 200+(i*100), 30, BLACK);
-                    if(playerInfo[i].bootsOn) DrawText("ON", 1200, 200+(i*100), 25, BLACK);
-                    else DrawText("OFF", 1200, 200+(i*100), 30, BLACK);
+                    if(playerInfo[i].shieldOn) DrawText("ON", 1120, 210+(i*100), 25, BLACK);
+                    else DrawText("OFF", 1120, 210+(i*100), 30, BLACK);
+                    if(playerInfo[i].bootsOn) DrawText("ON", 1200, 210+(i*100), 25, BLACK);
+                    else DrawText("OFF", 1200, 210+(i*100), 30, BLACK);
                 
                     //HP Checking
                     if(playerInfo[i].playerHP == 0 && !trap){
@@ -407,7 +422,7 @@ int main(void)
                     }
                     
                     //Check IF there's any player can claim item.
-                    for(int j=0; j<4; j++){
+                    for(int j=0; j<3; j++){
                         if(playerInfo[i].playerPos == itemPos[j] && !playerInfo[i].itemClaim){
                             samePosItem = i;
                             itemEvent = true;
@@ -415,7 +430,7 @@ int main(void)
                     }
                     
                     //Check IF there's any player step on heal tile.
-                    for(int j=0; j<4; j++){
+                    for(int j=0; j<3; j++){
                         if(playerInfo[i].playerPos == healPos[j] && !playerInfo[i].healClaim){
                             samePosHeal = i;
                             healEvent = true;
@@ -428,10 +443,14 @@ int main(void)
                         if(playerInfo[playerTurn].shieldOn){
                             playerInfo[playerTurn].playerPos += 1;
                             playerInfo[playerTurn].shieldOn = false;
+                            delayable = true;
+                            DrawText("*Sheild activated*", 500, 30, 50, YELLOW);
                             continue;
                         }else if(playerInfo[samePos].shieldOn){
                             playerInfo[samePos].playerPos += 1;
                             playerInfo[samePos].shieldOn = false;
+                            delayable = true;
+                            DrawText("*Sheild activated*", 500, 30, 50, YELLOW);
                             continue;
                         }
                         battleBegin = true;
@@ -457,7 +476,7 @@ int main(void)
 
                 
             //Game didn't start yet.
-            }else{
+            }else if(!gameStart && !gameEnd){
                 
                 //Draw start menu background.
                 DrawTexture(menuBg, 0, 0, WHITE);
@@ -473,7 +492,11 @@ int main(void)
                 if(IsClicked(mouseOn1) == 1) gameStart = true;
                 else if(IsClicked(mouseOn1) == 2) DrawTextureRec(startBtn, startBtnRec, (Vector2){startBtnBound.x, startBtnBound.y}, BLACK);
                 
+            }else if(gameEnd){
+                ClearBackground(WHITE);
+                DrawText("GameEND", screenWidth/2, screenHeight/2, 50, BLACK);
             }
+            
         //END Drawing progress.    
         EndDrawing();
         
