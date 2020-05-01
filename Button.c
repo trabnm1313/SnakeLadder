@@ -59,17 +59,22 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Snake Ladder - Computer programming");
     
     //Image variable.
-    Image btnImg = LoadImage("src/img/btn.png");
+    Image character[4];
     
     //Texture variable.
+    Texture2D selectBtn[3];
+    Texture2D characterTexture[4];
+    Texture2D menuBtn = LoadTexture("src/img/back_to_menu.png");
     Texture2D rollBtn = LoadTexture("src/img/roll.png");
     Texture2D battleBtn = LoadTexture("src/img/battle.png");
     Texture2D menuBg = LoadTexture("src/img/menu.png");
     Texture2D backGround = LoadTexture("src/img/bg.png");
-    Texture2D startBtn = LoadTextureFromImage(btnImg);
+    Texture2D endBg = LoadTexture("src/img/end.png");
+    Texture2D startBtn = LoadTexture("src/img/start.png");
+    
     
     //Struct?
-    struct character{
+    struct Player{
         int playerPos;
         int playerHP;
         bool enemyWin;
@@ -88,32 +93,35 @@ int main(void)
     int rollFrameHeight = rollBtn.height / 2;
    
     //Rectangle Rec src.
-    Rectangle playerSelectRec[3];
-    Rectangle startBtnRec = {0, 0, startBtn.width, startBtn.height};
+    Rectangle endRec = {0, 0, screenWidth, screenHeight};
+    Rectangle selectBtnRec[3];
+    Rectangle menuBtnRec = {0, 0, menuBtn.width, rollFrameHeight};
+    Rectangle startBtnRec = {0, 0, startBtn.width, rollFrameHeight};
     Rectangle rollBtnRec = {0, 0, rollBtn.width, rollFrameHeight};
     Rectangle battleBtnRec = {0, 0, battleBtn.width, rollFrameHeight};
     Rectangle Char1 = {0, 0, 50, 50};
     
     //Rectangle bound src.
     Rectangle startBtnBound = {screenWidth / 2 - startBtn.width / 2, screenHeight / 4, startBtn.width, startBtn.height};
+    Rectangle menuBtnBound = {screenWidth / 2 - startBtn.width / 2, screenHeight / 4, startBtn.width, startBtn.height};
     Rectangle rollBtnBound = {1030, 570, rollBtn.width, rollFrameHeight};
     Rectangle battleBtnBound = {1025, 25, battleBtn.width, rollFrameHeight};
+    Rectangle selectBtnBound[3];
     
     //Game state and true/false variable.
     bool gameStart=false, gameEnd=false, battleBegin=false, playerRoll=false, battleDone=false, delayable=false, trap=false, enemyFight=false, itemEvent=false, tied=false, wait=false, healEvent=false;
-    bool mouseOn1, mouseOn2, mouseOn3, mouseOnPlayerSelect[3];
+    bool mouseOn_startBtn, mouseOn_rollBtn, mouseOn_battleBtn, mouseOn_menuBtn, mouseOn_playerSelect[3];
     
     //Integer variable.
     int btnState = 0, battleMsgShow=0;
     int randNum, randNumBattle, randPlayer;
     int playerNum=2;
     int playerTurn=0;
-    int samePos=0, samePosItem=-1, samePosHeal=-1, player1Randnum, player2Randnum, itemRand=0, clickBattle=0, jackPot=100, bootsNum=0;
+    int samePos=0, samePosItem=-1, samePosHeal=-1, player1Randnum, player2Randnum, itemRand=0, clickBattle=0, jackPot=100, bootsNum=0, win=-1;
     int enemyPos[4] = {5, 15, 24, 33}, itemPos[3] = {7, 20, 30}, healPos[3]={18, 27, 34};
     
     //Character/String variable.
-    char randStr[3] = "", player1Randstr[3] = "", player2Randstr[3] = "", playerPosStr[4][3], samePosStr[3], playerTurnStr[3], battleMsg[50], playerHPStr[4][3], rollNumber[30]="", player1[10]="", player2[10]="";
-    
+    char randStr[3] = "", player1Randstr[3] = "", player2Randstr[3] = "", playerPosStr[4][3], samePosStr[3], playerTurnStr[3], battleMsg[50], playerHPStr[4][3], rollNumber[30]="", player1[10]="", player2[10]="", winStr[20]="", selectStr[60]="", playerNumStr[20]="";
     SetTargetFPS(60);
     
     //Init.
@@ -125,11 +133,19 @@ int main(void)
         playerInfo[i].shieldOn = false;
         playerInfo[i].bootsOn = false;
         playerInfo[i].healClaim = false;
+        sprintf(selectStr, "src/img/no%d.png", i+1);
+        character[i] = LoadImage(selectStr);
+        ImageResize(&character[i], 50, 50);
+        characterTexture[i] = LoadTextureFromImage(character[i]);
+        selectStr[0] = '\0';
     }
-
-    playerSelectRec[0] = (Rectangle){850, 30, 100, 50};
-    playerSelectRec[1] = (Rectangle){1000, 30, 100, 50};
-    playerSelectRec[2] = (Rectangle){1150, 30, 100, 50};
+    for(int i=0; i<3; i++){
+        sprintf(selectStr, "src/img/%dplayer.png", i+2);
+        selectBtn[i] = LoadTexture(selectStr);
+        selectBtnRec[i] = (Rectangle){0, 0, selectBtn[0].width, selectBtn[0].height / 2};
+        selectBtnBound[i] = (Rectangle){850+(i*150), 10, selectBtn[0].width, selectBtn[0].height / 2};
+        selectStr[0] = '\0';
+    }
     
     playerInfo[0].playerColor = (Color){ 0, 0, 0, 255 };
     playerInfo[1].playerColor = (Color){ 230, 41, 55, 255 };
@@ -142,11 +158,12 @@ int main(void)
         //Get mouse position to mousePos.
         Vector2 mousePos = GetMousePosition();
         //Check collision between mousePos and button/rectangle, return bool.
-        mouseOn1 = IsMouseOver(mousePos, startBtnBound);
-        mouseOn2 = IsMouseOver(mousePos, rollBtnBound);
-        mouseOn3 = IsMouseOver(mousePos, battleBtnBound);
+        mouseOn_startBtn = IsMouseOver(mousePos, startBtnBound);
+        mouseOn_rollBtn = IsMouseOver(mousePos, rollBtnBound);
+        mouseOn_battleBtn = IsMouseOver(mousePos, battleBtnBound);
+        mouseOn_menuBtn = IsMouseOver(mousePos, menuBtnBound);
         for(int i=0; i<3; i++){
-            mouseOnPlayerSelect[i] = IsMouseOver(mousePos, playerSelectRec[i]);
+            mouseOn_playerSelect[i] = IsMouseOver(mousePos, selectBtnBound[i]);
         }
         
         //Check for "F11" is press and toggle fullscreen mode.
@@ -156,22 +173,26 @@ int main(void)
         }
         if(IsKeyPressed(KEY_P)){
             gameStart = false;
-            playerInfo[0].playerPos = 0;
-            playerInfo[1].playerPos = 0;
-            playerInfo[2].playerPos = 0;
-            playerInfo[3].playerPos = 0;
-            *player1Randstr = "";
-            *player2Randstr = "";
+            gameEnd = false;
+            for(int i=0; i<4; i++){
+                playerInfo[i].playerPos = 0;
+                playerInfo[i].playerHP = 2;
+                playerInfo[i].enemyWin = false;
+                playerInfo[i].itemClaim = false;
+                playerInfo[i].shieldOn = false;
+                playerInfo[i].bootsOn = false;
+                playerInfo[i].healClaim = false;
+            }
+            player1Randstr[0] = '\0';
+            player2Randstr[0] = '\0';
             playerTurn = 0;
-            *randStr = "";
+            randStr[0] = '\0';
             battleBegin = false;
+            itemEvent = false;
+            healEvent = false;
             battleDone = false;
             playerRoll = false;
-            playerInfo[0].playerHP = 2;
-            playerInfo[1].playerHP = 2;
-            playerInfo[2].playerHP = 2;
-            playerInfo[3].playerHP = 2;
-            
+            win = -1; 
         }
         
         //Cycle player turn from player 1 to player 4;
@@ -211,8 +232,9 @@ int main(void)
                 
                 //ItemClaiming Event
                 if(itemEvent && !playerInfo[samePosItem].itemClaim){
+                    playerRoll = true;
                     sprintf(player1, "P%d obtain item ", samePosItem);
-                    itemRand = GetRandomValue(1, 3);
+                    itemRand = GetRandomValue(1, 5);
                     DrawText(player1, 300, 45, 40, BLACK);
                     if(itemRand == 1) {
                         playerInfo[samePosItem].shieldOn = true;
@@ -226,6 +248,18 @@ int main(void)
                         randNum = GetRandomValue(1, 3);
                         playerInfo[randPlayer].playerPos -= randNum;
                         DrawText("*Curse* and someone got cursed!", 600, 45, 35, RED);
+                    }else if(itemRand == 4){
+                        randNum = GetRandomValue(0, playerNum);
+                        playerTurn = randNum;
+                        DrawText("*CHAOS*!", 600, 45, 40, PURPLE);
+                        playerRoll = false;
+                    }else if(itemRand == 5){
+                        samePos = GetRandomValue(0, playerNum-1);
+                        while(samePos == samePosItem) samePos = GetRandomValue(0, playerNum-1);
+                        battleBegin = true;
+                        playerRoll = false;
+                        battleDone = false;
+                        DrawText("*Arena!* and challenged someone.", 600, 45, 35, WHITE);
                     }
                     delayable = true;
                     wait = true;
@@ -253,7 +287,7 @@ int main(void)
                     
                     
                     //Check for button press and random number for fighting.
-                    if(IsClicked(mouseOn3) == 1){
+                    if(IsClicked(mouseOn_battleBtn) == 1){
                         battleBtnRec.y = 0;
                         if(clickBattle == 0){
                             randNumBattle = GetRandomValue(1, 6);
@@ -264,11 +298,13 @@ int main(void)
                             sprintf(player2Randstr, "%d", randNumBattle);
                             clickBattle = 1;
                         }
-                    }else if(IsClicked(mouseOn3) == 2) battleBtnRec.y = rollFrameHeight;
+                    }else if(IsClicked(mouseOn_battleBtn) == 2) battleBtnRec.y = rollFrameHeight;
                     //If battle didn't start place string for "?".
                     if(clickBattle == 0){
-                        *player1Randstr = "?";
-                        *player2Randstr = "?";
+                        player1Randstr[0] = '?';
+                        player1Randstr[1] = '\0';
+                        player2Randstr[0] = '?';
+                        player2Randstr[1] = '\0';
                     }
                     //Draw random number of each player in battle.
                     DrawText(player1, 30, 40, 45, playerInfo[playerTurn].playerColor);
@@ -328,12 +364,12 @@ int main(void)
                     //Draw dice roll button for player.
                     DrawTextureRec(rollBtn, rollBtnRec, (Vector2){rollBtnBound.x, rollBtnBound.y}, WHITE);
                     //Random number and check for button press when rollBtn is pressed.
-                    if(IsClicked(mouseOn2) == 1){
+                    if(IsClicked(mouseOn_rollBtn) == 1){
                         playerInfo[playerTurn].itemClaim = false;
                         playerInfo[playerTurn].healClaim = false;
                         rollBtnRec.y = 0;
                         randNum = GetRandomValue(1, 6);
-                        playerInfo[playerTurn].playerPos = playerInfo[playerTurn].playerPos + randNum;
+                        playerInfo[playerTurn].playerPos += randNum;
                         if(playerInfo[playerTurn].bootsOn){
                             bootsNum = GetRandomValue(1, 3);
                             playerInfo[playerTurn].playerPos += bootsNum;
@@ -351,7 +387,7 @@ int main(void)
                         DrawText(rollNumber, 1040, 660, 20, BLACK);
                         strcpy(rollNumber, "");
                         delayable = true;
-                    }else if(IsClicked(mouseOn2) == 2) rollBtnRec.y = rollFrameHeight;
+                    }else if(IsClicked(mouseOn_rollBtn) == 2) rollBtnRec.y = rollFrameHeight;
                 }
                 
                 
@@ -359,6 +395,7 @@ int main(void)
                 if(playerInfo[playerTurn].playerPos == 39){
                     gameEnd = true;
                     gameStart = false;
+                    win = playerTurn;
                 }
                 //Check if player exceed board limit, player will revert back for each number exceed.
                 if(playerInfo[playerTurn].playerPos > 39) playerInfo[playerTurn].playerPos = 39 - (playerInfo[playerTurn].playerPos % 39);
@@ -381,7 +418,8 @@ int main(void)
                     if(playerInfo[i].playerPos < 0) playerInfo[i].playerPos = 0;
                     
                     //Draw player character
-                    DrawRectanglePro(Char1, (Vector2){boardPosX[playerInfo[i].playerPos], boardPosY[playerInfo[i].playerPos]}, 0, playerInfo[i].playerColor);
+                    //DrawRectanglePro(Char1, (Vector2){boardPosX[playerInfo[i].playerPos], boardPosY[playerInfo[i].playerPos]}, 0, playerInfo[i].playerColor);
+                    DrawTextureV(characterTexture[i], (Vector2){-boardPosX[playerInfo[i].playerPos], -boardPosY[playerInfo[i].playerPos]}, WHITE);
                 
                     //Buffer player position to string and Draw it.
                     sprintf(playerPosStr[i], "%d", playerInfo[i].playerPos);
@@ -426,6 +464,7 @@ int main(void)
                         if(playerInfo[i].playerPos == itemPos[j] && !playerInfo[i].itemClaim){
                             samePosItem = i;
                             itemEvent = true;
+                            playerRoll = false;
                         }
                     }
                     
@@ -480,22 +519,59 @@ int main(void)
                 
                 //Draw start menu background.
                 DrawTexture(menuBg, 0, 0, WHITE);
+                //Draw playerNum
+                sprintf(playerNumStr, "Play with %d player(s).", playerNum);
+                DrawText(playerNumStr, 850, 75, 30, BLACK);
                 //Draw startBtn.
                 DrawTextureRec(startBtn, startBtnRec, (Vector2){startBtnBound.x, startBtnBound.y}, WHITE);
                 for(int i=0; i<3; i++){
-                    DrawRectangleRec(playerSelectRec[i], BLACK);
-                    if(IsClicked(mouseOnPlayerSelect[i]) == 1){
-                        playerNum = i+2;
-                    }else if(IsClicked(mouseOnPlayerSelect[i]) == 2) DrawRectangleRec(playerSelectRec[i], WHITE);
+                   DrawTextureRec(selectBtn[i], selectBtnRec[i], (Vector2){selectBtnBound[i].x, selectBtnBound[i].y}, WHITE);
+                   if(IsClicked(mouseOn_playerSelect[i]) == 1) playerNum = i+2;
+                   else if(IsClicked(mouseOn_playerSelect[i]) == 2) selectBtnRec[i].y = selectBtn[i].height / 2;
+                   else selectBtnRec[i].y = 0;
                 }
                 //Check if start button is pressed or not.
-                if(IsClicked(mouseOn1) == 1) gameStart = true;
-                else if(IsClicked(mouseOn1) == 2) DrawTextureRec(startBtn, startBtnRec, (Vector2){startBtnBound.x, startBtnBound.y}, BLACK);
+                if(IsClicked(mouseOn_startBtn) == 1) gameStart = true;
+                else if(IsClicked(mouseOn_startBtn) == 2) startBtnRec.y = rollFrameHeight;
                 
             }else if(gameEnd){
                 ClearBackground(WHITE);
-                DrawText("GameEND", screenWidth/2, screenHeight/2, 50, BLACK);
+                //BACKGROUND
+                DrawTexture(endBg, 0, 0, WHITE);
+                //TEXT
+                sprintf(winStr, "P%d ", win+1);
+                DrawText(winStr, screenWidth/2-100, screenHeight/2-100, 50, playerInfo[win].playerColor);
+                DrawText("  Win!", screenWidth/2-50, screenHeight/2-100, 50, BLACK);
+                //BUTTON
+                DrawTextureRec(menuBtn, menuBtnRec, (Vector2){menuBtnBound.x, menuBtnBound.y}, WHITE);
+                if(IsClicked(mouseOn_menuBtn) == 1){
+                    menuBtnRec.y = 0;
+                    gameStart = false;
+                    gameEnd = false;
+                    for(int i=0; i<4; i++){
+                        playerInfo[i].playerPos = 0;
+                        playerInfo[i].playerHP = 2;
+                        playerInfo[i].enemyWin = false;
+                        playerInfo[i].itemClaim = false;
+                        playerInfo[i].shieldOn = false;
+                        playerInfo[i].bootsOn = false;
+                        playerInfo[i].healClaim = false;
+                    }
+                    player1Randstr[0] = '\0';
+                    player2Randstr[0] = '\0';
+                    playerTurn = 0;
+                    randStr[0] = '\0';
+                    battleBegin = false;
+                    itemEvent = false;
+                    healEvent = false;
+                    battleDone = false;
+                    playerRoll = false;
+                    win = -1;
+                }
+                else if(IsClicked(mouseOn_menuBtn) == 2) menuBtnRec.y = rollFrameHeight;
             }
+
+ 
             
         //END Drawing progress.    
         EndDrawing();
@@ -534,7 +610,12 @@ int main(void)
     
     
     //Unload Texture, Image, etc out of memory.
-    UnloadImage(btnImg);
+    for(int i=0; i<3; i++){
+        UnloadTexture(selectBtn[i]);
+    }
+    for(int i=0; i<4; i++){
+    }
+    UnloadTexture(endBg);
     UnloadTexture(rollBtn);
     UnloadTexture(menuBg);
     UnloadTexture(startBtn);
