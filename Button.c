@@ -58,6 +58,21 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "Snake Ladder - Computer programming");
     
+    //Init audio
+    InitAudioDevice();
+    
+    //Music variable.
+    Music music = LoadMusicStream("src/sound/bgm.ogg");
+    
+    //Sound variable.
+    Sound fxButton = LoadSound("src/sound/click.mp3");
+    Sound fxBattle = LoadSound("src/sound/battle.mp3");
+    Sound fxClaim = LoadSound("src/sound/claim.mp3");
+    
+    
+    
+    
+    
     //Image variable.
     Image character[4];
     
@@ -122,7 +137,13 @@ int main(void)
     
     //Character/String variable.
     char randStr[3] = "", player1Randstr[3] = "", player2Randstr[3] = "", playerPosStr[4][3], samePosStr[3], playerTurnStr[3], battleMsg[50], playerHPStr[4][3], rollNumber[30]="", player1[10]="", player2[10]="", winStr[20]="", selectStr[60]="", playerNumStr[20]="";
+    
     SetTargetFPS(60);
+    PlayMusicStream(music);
+    SetMusicVolume(music, 0.4);
+    SetSoundVolume(fxButton, 0.75);
+    SetSoundVolume(fxBattle, 0.75);
+    SetSoundVolume(fxClaim, 0.75);
     
     //Init.
     for(int i=0; i<4; i++){
@@ -137,6 +158,7 @@ int main(void)
         character[i] = LoadImage(selectStr);
         ImageResize(&character[i], 50, 50);
         characterTexture[i] = LoadTextureFromImage(character[i]);
+        UnloadImage(character[i]);
         selectStr[0] = '\0';
     }
     for(int i=0; i<3; i++){
@@ -155,6 +177,8 @@ int main(void)
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
+        UpdateMusicStream(music);
+        
         //Get mouse position to mousePos.
         Vector2 mousePos = GetMousePosition();
         //Check collision between mousePos and button/rectangle, return bool.
@@ -215,6 +239,7 @@ int main(void)
                 
                 //HealClaiming Event
                 if(healEvent && !playerInfo[samePosHeal].healClaim){
+                    PlaySound(fxClaim);
                     jackPot = GetRandomValue(1, 100);
                     if(jackPot == 1){
                         playerInfo[samePosHeal].playerHP += 3;
@@ -232,6 +257,7 @@ int main(void)
                 
                 //ItemClaiming Event
                 if(itemEvent && !playerInfo[samePosItem].itemClaim){
+                    PlaySound(fxClaim);
                     playerRoll = true;
                     sprintf(player1, "P%d obtain item ", samePosItem);
                     itemRand = GetRandomValue(1, 5);
@@ -256,6 +282,7 @@ int main(void)
                     }else if(itemRand == 5){
                         samePos = GetRandomValue(0, playerNum-1);
                         while(samePos == samePosItem) samePos = GetRandomValue(0, playerNum-1);
+                        PlaySound(fxBattle);
                         battleBegin = true;
                         playerRoll = false;
                         battleDone = false;
@@ -272,6 +299,7 @@ int main(void)
                     sprintf(player1, "P%d: ", samePos+1);
                     sprintf(player2, "P%d: ", playerTurn+1);
                     if(battleMsgShow == 1 && !tied && !wait){
+                        PlaySound(fxBattle);
                         DrawText(battleMsg, 300, 45, 40, BLACK);
                         battleMsgShow = 2;
                         delayable = true;
@@ -288,6 +316,7 @@ int main(void)
                     
                     //Check for button press and random number for fighting.
                     if(IsClicked(mouseOn_battleBtn) == 1){
+                        PlaySound(fxButton);
                         battleBtnRec.y = 0;
                         if(clickBattle == 0){
                             randNumBattle = GetRandomValue(1, 6);
@@ -365,6 +394,7 @@ int main(void)
                     DrawTextureRec(rollBtn, rollBtnRec, (Vector2){rollBtnBound.x, rollBtnBound.y}, WHITE);
                     //Random number and check for button press when rollBtn is pressed.
                     if(IsClicked(mouseOn_rollBtn) == 1){
+                        PlaySound(fxButton);
                         playerInfo[playerTurn].itemClaim = false;
                         playerInfo[playerTurn].healClaim = false;
                         rollBtnRec.y = 0;
@@ -526,12 +556,16 @@ int main(void)
                 DrawTextureRec(startBtn, startBtnRec, (Vector2){startBtnBound.x, startBtnBound.y}, WHITE);
                 for(int i=0; i<3; i++){
                    DrawTextureRec(selectBtn[i], selectBtnRec[i], (Vector2){selectBtnBound[i].x, selectBtnBound[i].y}, WHITE);
-                   if(IsClicked(mouseOn_playerSelect[i]) == 1) playerNum = i+2;
+                   if(IsClicked(mouseOn_playerSelect[i]) == 1) {
+                       PlaySound(fxButton);
+                       playerNum = i+2;
+                   }
                    else if(IsClicked(mouseOn_playerSelect[i]) == 2) selectBtnRec[i].y = selectBtn[i].height / 2;
                    else selectBtnRec[i].y = 0;
                 }
                 //Check if start button is pressed or not.
                 if(IsClicked(mouseOn_startBtn) == 1){
+                    PlaySound(fxButton);
                     gameStart = true;
                     startBtnRec.y = 0;
                 }
@@ -548,6 +582,7 @@ int main(void)
                 //BUTTON
                 DrawTextureRec(menuBtn, menuBtnRec, (Vector2){menuBtnBound.x, menuBtnBound.y}, WHITE);
                 if(IsClicked(mouseOn_menuBtn) == 1){
+                    PlaySound(fxButton);
                     menuBtnRec.y = 0;
                     gameStart = false;
                     gameEnd = false;
@@ -615,14 +650,22 @@ int main(void)
     //Unload Texture, Image, etc out of memory.
     for(int i=0; i<3; i++){
         UnloadTexture(selectBtn[i]);
+        
     }
     for(int i=0; i<4; i++){
+        UnloadTexture(characterTexture[i]);
     }
+    
+    UnloadSound(fxButton);
     UnloadTexture(endBg);
     UnloadTexture(rollBtn);
     UnloadTexture(menuBg);
+    UnloadTexture(menuBtn);
     UnloadTexture(startBtn);
     UnloadTexture(backGround);
+    UnloadTexture(battleBtn);
+    
+    CloseAudioDevice();
 
     CloseWindow();
 
