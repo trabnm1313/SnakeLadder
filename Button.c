@@ -531,7 +531,10 @@ int main(void)
                    else selectBtnRec[i].y = 0;
                 }
                 //Check if start button is pressed or not.
-                if(IsClicked(mouseOn_startBtn) == 1) gameStart = true;
+                if(IsClicked(mouseOn_startBtn) == 1){
+                    gameStart = true;
+                    startBtnRec.y = 0;
+                }
                 else if(IsClicked(mouseOn_startBtn) == 2) startBtnRec.y = rollFrameHeight;
                 
             }else if(gameEnd){
