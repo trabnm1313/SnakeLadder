@@ -20,3 +20,5 @@ There is 3 special tile in the game
         - Curse: Randomly force some player to step back up to 3 position.(Include player's who obtain this item.)
         - Arena: Randomly battle with someone wherever he/she is.
         - Chaos: Chaos?, wait who's roll next turn again..? (Randomly next turn instead of respectively.)(Include player's who obtain this item.)
+
+When you Hp reach 0, You'll step back 2 positions.
